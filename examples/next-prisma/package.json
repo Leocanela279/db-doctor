@@ -1,0 +1,12 @@
+{
+  "name": "next-prisma-example",
+  "private": true,
+  "dependencies": {
+    "next": "15.0.0",
+    "@prisma/client": "^5.22.0",
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  }
+}

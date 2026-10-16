@@ -1,0 +1,69 @@
+{
+  "skill_name": "db-doctor",
+  "evals": [
+    {
+      "id": 1,
+      "name": "laravel-slow-posts-page",
+      "prompt": "La página /posts de mi app Laravel tarda unos 4 segundos y creo que es un bug del controlador. El proyecto está en examples/laravel-blog. ¿Puedes revisarlo y decirme qué pasa y cómo arreglarlo?",
+      "expected_output": "Full audit report in Spanish (db-doctor-report.md) tracing the slow page to N+1 lazy loading in the Blade view combined with the unindexed comments.post_id foreign key, with a phased plan, proposed SQL/migrations, risks and validation.",
+      "files": ["examples/laravel-blog"],
+      "assertions": [
+        "Identifies N+1 on author, comments and tags in resources/views/posts/index.blade.php and attributes the slowness to it rather than to controller logic",
+        "Flags that comments.post_id (foreign key) has no index on PostgreSQL",
+        "Proposes eager loading with with()/withCount() in PostController@index",
+        "Proposes CREATE INDEX CONCURRENTLY inside a migration with $withinTransaction = false (or equivalent non-blocking approach)",
+        "Flags the SQL injection in orWhereRaw with interpolated $q as a security issue",
+        "Report is written in Spanish and contains evidence, proposed SQL, risks and validation for each action",
+        "Does not invent measured timings; query counts are derived from code (e.g. 1 + 3 x 20)"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "spring-orders-timeout",
+      "prompt": "Our Spring Boot orders endpoint (OrderService.listOrders) keeps timing out in production since we passed 200k orders. Code is in examples/spring-shop. Can you audit the data access and give us an optimization plan we can review as a team?",
+      "expected_output": "Report in English covering Hibernate N+1 in listOrders (items, product, customer), EAGER mappings, open-in-view, findAll() without paging, missing index on order_items.order_id, redundant/duplicate indexes in V1__init.sql, and the string-built native query.",
+      "files": ["examples/spring-shop"],
+      "assertions": [
+        "Identifies lazy loading of getItems() / getProduct() / getCustomer() inside the loops of listOrders as N+1 (nested: N x M)",
+        "Recommends JOIN FETCH / @EntityGraph and/or default_batch_fetch_size, and a paginated or projected query instead of findAll()",
+        "Flags @OneToMany(fetch = EAGER) on Customer.orders and default-EAGER @ManyToOne",
+        "Flags spring.jpa.open-in-view not disabled",
+        "Flags the missing index on order_items(order_id) foreign key",
+        "Flags idx_customers_email as duplicate of the UNIQUE constraint and idx_orders_customer as redundant prefix",
+        "Flags the native query built with string concatenation in OrderService.search as SQL injection",
+        "Mentions MultipleBagFetchException or pagination-with-fetch-join pitfalls as risks of the fix"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "prisma-supabase-index-review",
+      "prompt": "oye revisa los indices de examples/next-prisma, sobra alguno? falta alguno? usamos supabase y prisma. explicame lo bueno y lo malo de cada cambio que propongas",
+      "expected_output": "Focused index audit in Spanish: duplicate @@index([email]) next to @unique, redundant @@index([userId]) prefix of [userId, createdAt], missing indexes on posts.category_id and comments.post_id, low-selectivity index on published, RLS auth.uid() not wrapped, with pros/cons per change.",
+      "files": ["examples/next-prisma"],
+      "assertions": [
+        "Flags @@index([email]) as redundant with @unique on User.email",
+        "Flags @@index([userId]) on Comment as a left prefix of @@index([userId, createdAt])",
+        "Recommends @@index on Comment.postId and Post.categoryId (FKs not indexed on PostgreSQL)",
+        "Comments on the low-selectivity @@index([published]) and suggests partial/composite alternatives",
+        "Mentions wrapping auth.uid() as (select auth.uid()) in the RLS policy",
+        "Each proposed change lists both benefits and costs (write overhead, storage, locking)",
+        "Answer/report is in Spanish"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "quick-check-single-query",
+      "prompt": "Is this query ok? It's MySQL 8 and orders has ~30M rows: SELECT * FROM orders WHERE YEAR(created_at) = 2025 AND customer_email LIKE '%@gmail.com' ORDER BY created_at DESC LIMIT 20 OFFSET 40000",
+      "expected_output": "Inline answer (no report file): non-sargable YEAR(), leading wildcard LIKE, deep OFFSET, SELECT *; rewrite with a date range and keyset pagination; index suggestion with trade-offs; how to verify with EXPLAIN ANALYZE.",
+      "files": [],
+      "assertions": [
+        "Answers in the conversation without creating a report file",
+        "Explains YEAR(created_at) prevents index use and rewrites it as a half-open date range",
+        "Explains the leading-wildcard LIKE cannot use a B-tree index and offers an alternative (FULLTEXT, reverse/domain column, search engine)",
+        "Replaces OFFSET 40000 with keyset pagination using (created_at, id)",
+        "Suggests an index (e.g. on created_at, id) and states both its benefit and its write/storage cost",
+        "Tells how to verify with EXPLAIN / EXPLAIN ANALYZE"
+      ]
+    }
+  ]
+}

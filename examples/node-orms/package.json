@@ -1,0 +1,9 @@
+{
+  "name": "node-orms-example",
+  "private": true,
+  "dependencies": {
+    "typeorm": "^0.3.20",
+    "sequelize": "^6.37.0",
+    "mysql2": "^3.11.0"
+  }
+}

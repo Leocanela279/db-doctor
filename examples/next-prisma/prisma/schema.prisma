@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  name      String?
+  role      Role      @default(USER)
+  posts     Post[]
+  comments  Comment[]
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([email])
+  @@map("users")
+}
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  posts Post[]
+
+  @@map("categories")
+}
+
+model Post {
+  id         Int       @id @default(autoincrement())
+  title      String
+  published  Boolean   @default(false)
+  authorId   Int       @map("author_id")
+  author     User      @relation(fields: [authorId], references: [id])
+  categoryId Int?      @map("category_id")
+  category   Category? @relation(fields: [categoryId], references: [id])
+  comments   Comment[]
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([published])
+  @@index([authorId, createdAt])
+  @@map("posts")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  body      String
+  postId    Int      @map("post_id")
+  post      Post     @relation(fields: [postId], references: [id])
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@map("comments")
+}
